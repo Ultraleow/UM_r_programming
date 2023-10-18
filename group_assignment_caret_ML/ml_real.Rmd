@@ -1,0 +1,424 @@
+---
+title: "Ml real"
+author: "Leow Jun Shou"
+date: '2022-05-31'
+output: html_document
+---
+
+---
+```{r}
+#install.packages("caret")
+#install.packages("performanceEstimation")
+#install.packages("MLeval")
+#install.packages("glmnet")
+#install.packages("fastAdaboost")
+```
+
+install library
+
+```{r}
+library(caret)
+library(performanceEstimation)
+library(MLeval)
+library(glmnet)
+library(fastAdaboost)
+```
+
+-write function for split the class, smote sampling, z-score normalization
+why smote sampling
+Because this is an unbalanced dataset, which have only 5% of bankrupt sample, and the remaining 95% are the company which able to sustain.
+Why Z-score normalization
+Compare to min-max, z-score normalization are more suitable in this case because outliers affect the most for min-max
+
+
+
+```{r}
+df <- read.csv("df5.csv")
+df$class = as.factor(df$class)
+levels(df$class) <- c("Sustain", "Bankrupt")
+
+smote_training_func <- function(dataframe){
+  return(smote(dataframe$class~ ., dataframe, perc.over = 10, k = 5, perc.under = 1.2))
+}
+z_score_normalization <- function(dataframe){
+  total_attri_col <- ncol(dataframe)-1
+  preproc <- preProcess(dataframe[,c(1:total_attri_col)], method=c("center","scale"))
+  normalized_df_x <- predict(preproc , dataframe[,c(1:total_attri_col)])
+  normalized_df <- cbind(normalized_df_x,dataframe$class)
+  names(normalized_df)[24] <- "class"
+  return(normalized_df)
+}
+split_traintest<-function(dataframe){
+  set.seed(7)
+  split=0.80  # define an 80%/20% train/test split of the dataset
+  trainIndex<-createDataPartition(dataframe$class, p=split, list=FALSE)
+  data_train_rf<-dataframe[trainIndex,]
+  data_test_rf<-dataframe[-trainIndex,]
+  return(list(data_train_rf,data_test_rf))
+}
+```
+
+1.normalized > train and split > smote > RF and cross validation > save
+```{r}
+normal_df <-z_score_normalization(df)
+data_set <-split_traintest(normal_df)
+train_set <- data_set[[1]]
+test_set <- data_set[[2]]
+
+smote_training_set <- smote_training_func(train_set)
+nrow(smote_training_set[smote_training_set$class=="Sustain",])
+
+train_control <- trainControl(method="repeatedcv", number=10, repeats=5,classProbs=TRUE)
+#z_smote_rf_cv <- train(class~., data=smote_training_set, trControl=train_control, method="rf")
+#saveRDS(z_smote_rf_cv, "z_smote_rf_cv.rds")
+z_smote_rf_cv<- readRDS("z_smote_rf_cv.rds")
+z_smote_rf_cv
+pred <- predict(z_smote_rf_cv, newdata=test_set, type="prob")
+test1 <- evalm(data.frame(pred, test_set$class))
+```
+2.train and split > smote > RF and cross validation > save
+```{r}
+data_set <-split_traintest(df)
+train_set <- data_set[[1]]
+test_set <- data_set[[2]]
+
+smote_training_set <- smote_training_func(train_set)
+nrow(smote_training_set[smote_training_set$class=="Sustain",])
+
+train_control <- trainControl(method="repeatedcv", number=10, repeats=5,classProbs=TRUE)
+#smote_rf_cv <- train(class~., data=smote_training_set, trControl=train_control, method="rf")
+#saveRDS(smote_rf_cv, "smote_rf_cv.rds")
+smote_rf_cv<- readRDS("smote_rf_cv.rds")
+smote_rf_cv
+pred <- predict(smote_rf_cv, newdata=test_set, type="prob")
+test1 <- evalm(data.frame(pred, test_set$class))
+```
+
+
+
+3.normalized > train and split > smote > RF and cross validation > save
+```{r}
+normal_df <-z_score_normalization(df)
+data_set <-split_traintest(normal_df)
+train_set <- data_set[[1]]
+test_set <- data_set[[2]]
+
+
+train_control <- trainControl(method="repeatedcv", number=10, repeats=5,classProbs=TRUE)
+#z_rf_cv <- train(class~., data=train_set, trControl=train_control, method="rf")
+#saveRDS(z_smote_rf_cv, "z_rf_cv.rds")
+
+z_rf_cv<- readRDS("z_rf_cv.rds")
+z_rf_cv
+pred <- predict(z_rf_cv, newdata=test_set, type="prob")
+test1 <- evalm(data.frame(pred, test_set$class))
+```
+
+--------------------------------------------------------------------------------------------------
+4.normalized > train and split > smote > knn and cross validation > save
+```{r}
+normal_df <-z_score_normalization(df)
+data_set <-split_traintest(normal_df)
+train_set <- data_set[[1]]
+test_set <- data_set[[2]]
+
+smote_training_set <- smote_training_func(train_set)
+nrow(smote_training_set[smote_training_set$class=="Sustain",])
+
+train_control <- trainControl(method="repeatedcv", number=10, repeats=5,classProbs=TRUE)
+#z_smote_knn_cv <- train(class~., data=smote_training_set, trControl=train_control, method="knn")
+#saveRDS(z_smote_knn_cv, "z_smote_knn_cv.rds")
+
+z_smote_knn_cv<- readRDS("z_smote_knn_cv.rds")
+z_smote_knn_cv
+pred <- predict(z_smote_knn_cv, newdata=test_set, type="prob")
+test1 <- evalm(data.frame(pred, test_set$class))
+```
+5.train and split > smote > knn and cross validation > save
+```{r}
+data_set <-split_traintest(df)
+train_set <- data_set[[1]]
+test_set <- data_set[[2]]
+
+smote_training_set <- smote_training_func(train_set)
+nrow(smote_training_set[smote_training_set$class=="Sustain",])
+
+train_control <- trainControl(method="repeatedcv", number=10, repeats=5,classProbs=TRUE)
+#smote_knn_cv <- train(class~., data=smote_training_set, trControl=train_control, method="knn")
+#saveRDS(smote_knn_cv, "smote_knn_cv.rds")
+
+smote_knn_cv<- readRDS("smote_knn_cv.rds")
+smote_knn_cv
+pred <- predict(smote_knn_cv, newdata=test_set, type="prob")
+test1 <- evalm(data.frame(pred, test_set$class))
+```
+
+6.normalized > train and split > smote > knn and cross validation > save
+```{r}
+normal_df <-z_score_normalization(df)
+data_set <-split_traintest(normal_df)
+train_set <- data_set[[1]]
+test_set <- data_set[[2]]
+
+
+train_control <- trainControl(method="repeatedcv", number=10, repeats=5,classProbs=TRUE)
+#z_knn_cv <- train(class~., data=train_set, trControl=train_control, method="knn")
+#saveRDS(z_knn_cv, "z_knn_cv.rds")
+
+z_knn_cv<- readRDS("z_knn_cv.rds")
+z_knn_cv
+pred <- predict(z_knn_cv, newdata=test_set, type="prob")
+test1 <- evalm(data.frame(pred, test_set$class))
+```
+
+--------------------------------------------------------------------------------------------------
+
+
+
+7.normalized > train and split > smote > ada and cross validation > save
+```{r}
+normal_df <-z_score_normalization(df)
+data_set <-split_traintest(normal_df)
+train_set <- data_set[[1]]
+test_set <- data_set[[2]]
+
+smote_training_set <- smote_training_func(train_set)
+nrow(smote_training_set[smote_training_set$class=="Sustain",])
+
+train_control <- trainControl(method="repeatedcv", number=10, repeats=5,classProbs=TRUE)
+#z_smote_ada_cv <- train(class~., data=smote_training_set, trControl=train_control, method="adaboost")
+#saveRDS(z_smote_ada_cv, "z_smote_ada_cv.rds")
+
+z_smote_ada_cv<- readRDS("z_smote_ada_cv.rds")
+z_smote_ada_cv
+pred <- predict(z_smote_ada_cv, newdata=test_set, type="prob")
+test1 <- evalm(data.frame(pred, test_set$class))
+test1
+```
+8.train and split > smote > ada and cross validation > save
+```{r}
+data_set <-split_traintest(df)
+train_set <- data_set[[1]]
+test_set <- data_set[[2]]
+
+smote_training_set <- smote_training_func(train_set)
+nrow(smote_training_set[smote_training_set$class=="Sustain",])
+
+train_control <- trainControl(method="repeatedcv", number=10, repeats=5,classProbs=TRUE)
+#smote_ada_cv <- train(class~., data=smote_training_set, trControl=train_control, method="adaboost")
+#saveRDS(smote_ada_cv, "smote_ada_cv.rds")
+
+smote_ada_cv<- readRDS("smote_ada_cv.rds")
+smote_ada_cv
+pred <- predict(smote_ada_cv, newdata=test_set, type="prob")
+test1 <- evalm(data.frame(pred, test_set$class))
+test1
+```
+
+9.normalized > train and split > smote > ada and cross validation > save
+```{r}
+normal_df <-z_score_normalization(df)
+data_set <-split_traintest(normal_df)
+train_set <- data_set[[1]]
+test_set <- data_set[[2]]
+
+
+train_control <- trainControl(method="repeatedcv", number=10, repeats=5,classProbs=TRUE)
+#z_ada_cv <- train(class~., data=train_set, trControl=train_control, method="adaboost")
+#saveRDS(z_ada_cv, "z_ada_cv.rds")
+
+z_ada_cv<- readRDS("z_ada_cv.rds")
+z_ada_cv
+pred <- predict(z_ada_cv, newdata=test_set, type="prob")
+test1 <- evalm(data.frame(pred, test_set$class))
+```
+
+
+
+
+
+
+
+
+
+
+
+--------------------------------------------------------------------------------------------------
+10.normalized > train and split > smote > glmnet and cross validation > save
+```{r}
+normal_df <-z_score_normalization(df)
+data_set <-split_traintest(normal_df)
+train_set <- data_set[[1]]
+test_set <- data_set[[2]]
+nrow(test_set)
+
+smote_training_set <- smote_training_func(train_set)
+#nrow(smote_training_set[smote_training_set$class=="Sustain",])
+
+train_control <- trainControl(method="repeatedcv", number=10, repeats=5,classProbs=TRUE)
+#z_smote_glmnet_cv <- train(class~., data=smote_training_set, trControl=train_control, method="glmnet")
+#saveRDS(z_smote_glmnet_cv, "z_smote_glmnet_cv.rds")
+
+z_smote_glmnet_cv<- readRDS("z_smote_glmnet_cv.rds")
+z_smote_glmnet_cv
+pred <- predict(z_smote_glmnet_cv, newdata=test_set, type="prob")
+test1 <- evalm(data.frame(pred, test_set$class))
+```
+11.train and split > smote > glmnet and cross validation > save
+```{r}
+data_set <-split_traintest(df)
+train_set <- data_set[[1]]
+test_set <- data_set[[2]]
+
+smote_training_set <- smote_training_func(train_set)
+nrow(smote_training_set[smote_training_set$class=="Sustain",])
+
+train_control <- trainControl(method="repeatedcv", number=10, repeats=5)
+#smote_glmnet_cv <- train(class~., data=smote_training_set, trControl=train_control, method="glmnet")
+#saveRDS(smote_glmnet_cv, "smote_glmnet_cv.rds")
+
+smote_glmnet_cv<- readRDS("smote_glmnet_cv.rds")
+smote_glmnet_cv
+pred <- predict(smote_glmnet_cv, newdata=test_set, type="prob")
+test1 <- evalm(data.frame(pred, test_set$class))
+```
+
+12.normalized > train and split > smote > glmnet and cross validation > save
+```{r}
+normal_df <-z_score_normalization(df)
+data_set <-split_traintest(normal_df)
+train_set <- data_set[[1]]
+test_set <- data_set[[2]]
+
+
+train_control <- trainControl(method="repeatedcv", number=10, repeats=5)
+#z_glmnet_cv <- train(class~., data=train_set, trControl=train_control, method="glmnet")
+#saveRDS(z_glmnet_cv, "z_glmnet_cv.rds")
+
+z_glmnet_cv<- readRDS("z_glmnet_cv.rds")
+z_glmnet_cv
+pred <- predict(z_glmnet_cv, newdata=test_set, type="prob")
+test1 <- evalm(data.frame(pred, test_set$class))
+```
+AUC-ROC
+```{r}
+test1$optres$Group1
+```
+
+summary regression metrics for each model test set
+```{r}
+df_me <- data.frame (Method  = c(0),
+                  "AUC-ROC" = c(0)
+                  )
+
+pred <- predict(z_smote_rf_cv, newdata=test_set, type="prob")
+test1 <- evalm(data.frame(pred, test_set$class))
+temp<-c("z_smote_rf_cv",test1$optres$Group1$Score[13])
+df_me<-rbind(df_me,temp)
+
+pred <- predict(smote_rf_cv, newdata=test_set, type="prob")
+test1 <- evalm(data.frame(pred, test_set$class))
+temp<-c("smote_rf_cv",test1$optres$Group1$Score[13])
+df_me<-rbind(df_me,temp)
+
+
+pred <- predict(z_rf_cv, newdata=test_set, type="prob")
+test1 <- evalm(data.frame(pred, test_set$class))
+temp<-c("z_rf_cv",test1$optres$Group1$Score[13])
+df_me<-rbind(df_me,temp)
+
+
+pred <- predict(z_smote_knn_cv, newdata=test_set, type="prob")
+test1 <- evalm(data.frame(pred, test_set$class))
+temp<-c("z_smote_knn_cv",test1$optres$Group1$Score[13])
+df_me<-rbind(df_me,temp)
+
+
+pred <- predict(smote_knn_cv, newdata=test_set, type="prob")
+test1 <- evalm(data.frame(pred, test_set$class))
+temp<-c("smote_knn_cv",test1$optres$Group1$Score[13])
+df_me<-rbind(df_me,temp)
+
+
+pred <- predict(z_knn_cv, newdata=test_set, type="prob")
+test1 <- evalm(data.frame(pred, test_set$class))
+temp<-c("z_knn_cv",test1$optres$Group1$Score[13])
+df_me<-rbind(df_me,temp)
+
+
+pred <- predict(z_smote_ada_cv, newdata=test_set, type="prob")
+test1 <- evalm(data.frame(pred, test_set$class))
+temp<-c("z_smote_ada_cv",test1$optres$Group1$Score[13])
+temp
+df_me<-rbind(df_me,temp)
+
+
+pred <- predict(smote_ada_cv, newdata=test_set, type="prob")
+test1 <- evalm(data.frame(pred, test_set$class))
+temp<-c("smote_ada_cv",test1$optres$Group1$Score[13])
+df_me<-rbind(df_me,temp)
+
+
+pred <- predict(z_ada_cv, newdata=test_set, type="prob")
+test1 <- evalm(data.frame(pred, test_set$class))
+temp<-c("z_ada_cv",test1$optres$Group1$Score[13])
+df_me<-rbind(df_me,temp)
+
+
+pred <- predict(z_smote_glmnet_cv, newdata=test_set, type="prob")
+test1 <- evalm(data.frame(pred, test_set$class))
+temp<-c("z_smote_glmnet_cv",test1$optres$Group1$Score[13])
+df_me<-rbind(df_me,temp)
+
+
+pred <- predict(smote_glmnet_cv, newdata=test_set, type="prob")
+test1 <- evalm(data.frame(pred, test_set$class))
+temp<-c("smote_glmnet_cv",test1$optres$Group1$Score[13])
+df_me<-rbind(df_me,temp)
+
+
+pred <- predict(z_glmnet_cv, newdata=test_set, type="prob")
+test1 <- evalm(data.frame(pred, test_set$class))
+temp<-c("z_glmnet_cv",test1$optres$Group1$Score[13])
+df_me<-rbind(df_me,temp)
+df_me
+```
+```{r}
+library("ggplot2")
+df_me2<-df_me
+df_me2 <-df_me2[-1,]
+df_me2$AUC.ROC<-as.numeric(df_me2$"AUC.ROC")
+df_me2
+ggplot(df_me2,
+             aes(Method,AUC.ROC))+
+geom_bar(stat = "identity")+geom_text(aes(label = signif(AUC.ROC)), nudge_y = 0.1)
+```
+
+high sensitivity classifier
+
+In addition, for binary classification with imbalance classes, the area under the Receiver Operating Characteristic curve (ROC AUC) is a more suitable evaluation metric. The ROC curve is a two-dimensional measure of classification performance that plots the True Positive Rate (sensitivity) against the False Positive Rate (specificity). From the following confusion matrix, True Positive Rate and False Positive Rate are calculated as below.
+
+True Positive Rate=TP/(TP+FN)
+True Negative Rate=TN/(TN+FP)
+```{r}
+varImp(z_smote_ada_cv)
+plot(varImp(z_smote_ada_cv))
+```
+
+inference
+taking the best model as anomaly detection, and  classifier probability
+```{r}
+inference_df <- read.csv("df5.csv")
+normal_inference_df <-z_score_normalization(inference_df)
+inference_row<-tail(normal_inference_df,1)
+z_smote_ada_cv<- readRDS("z_smote_ada_cv.rds")
+prob <- predict(z_smote_ada_cv, newdata=inference_row, type="prob")
+prob
+pred <- predict(z_smote_ada_cv, newdata=inference_row)
+pred
+```
+
+
+
+
+

@@ -1,0 +1,126 @@
+---
+title: "tutorial6"
+author: "Leow Jun Shou"
+date: "20 April 2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+attitude
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(attitude)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+1.	See basic descriptive statistics
+
+Run the function and observe the output, paste your output here.
+
+a)	What is the difference between (attitude[3]) and (attitude$learning)
+
+```{r}
+summary(attitude[3])
+```
+
+
+```{r}
+summary(attitude$learning)
+```
+
+```{r}
+attitude[3]-attitude$learning
+```
+
+
+2.	Lists name of variables in a dataset
+```{r}
+colnames(attitude)
+```
+
+3.	Calculate number of rows in a dataset
+```{r}
+nrow(attitude)
+```
+
+4.	Calculate number of columns in a dataset
+```{r}
+ncol(attitude)
+```
+
+5.	List structure of a dataset
+```{r}
+structure(attitude)
+```
+```{r}
+typeof(attitude)
+```
+6.	See first 6 rows (by default) of dataset
+```{r}
+head(attitude)
+```
+7.	See first n rows of dataset
+```{r}
+n<-15
+head(attitude,n)
+```
+8.	See all rows but the last row
+```{r}
+head(attitude,nrow(attitude)-1)
+```
+9.	See last 6 rows (by default) of a dataset
+```{r}
+tail(attitude)
+```
+10.	See last n rows of dataset
+Select to see the last 12 rows of dataset.
+```{r}
+tail(attitude,12)
+```
+11.	See the last n rows but the first row
+```{r}
+tail(attitude,nrow(attitude)-1)
+```
+
+12.	Number of missing values
+Which function will returns number of missing values in each variable of a dataset?
+```{r}
+colSums(is.na(attitude))
+```
+13.	Number of missing values in a single variable
+```{r}
+colSums(is.na(attitude[3]))
+```
+14.	Plot a simple graph, which will appear on a screen device.
+```{r}
+plot(attitude$learning)
+```
+
+15.	Plot the graph shown below, and make it appear on a file device (a pdf file)
+```{r}
+pdf(file="figure.pdf")
+
+plot(attitude$privileges,attitude$learning, xlab="Privileges",
+   ylab="Learning",main="Learning Attitude",xlim=c(30,80))
+
+```
+
+
+
+
